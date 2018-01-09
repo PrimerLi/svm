@@ -1,0 +1,179 @@
+#!/usr/bin/env python
+
+import numpy as np
+import Point
+
+def printMatrix(matrix):
+    (row, col) = matrix.shape
+    for i in range(row):
+        for j in range(col):
+            print matrix[i, j], "  ", 
+        print ""
+    print ""
+
+def invertible(matrix):
+    (row, col) = matrix.shape
+    if (row != col):
+        return False
+    inverse = np.linalg.inv(matrix)
+    identity = np.diag(np.ones(row))
+    eps = 1.0e-8
+    return np.linalg.norm(inverse.dot(matrix) - identity) < eps
+
+def readPoints(inputFileName):
+    import os
+    assert(os.path.exists(inputFileName))
+    points = []
+    ifile = open(inputFileName, "r")
+    for (index, string) in enumerate(ifile):
+        a = string.split()
+        x = float(a[0])
+        y = float(a[1])
+        label = int(a[2])
+        points.append(Point.Point(x, y, label))
+    ifile.close()
+    return points
+
+def generateMatrix(points):
+    dimension = len(points)
+    A = np.zeros((dimension, dimension))
+    for i in range(dimension):
+        for j in range(i, dimension):
+            A[i, j] = points[i].label * points[j].label * (Point.inner(points[i], points[j]))
+            if (i != j):
+                A[j, i] = A[i, j]
+    return A
+
+def gradient(A, alpha, t, w, y):
+    assert(t > 1.0)
+    N = len(alpha)
+    assert(len(y) == N)
+    (row, col) = A.shape
+    assert(N == row)
+    assert(row == col)
+    result = np.zeros(N+1)
+    vector = A.dot(alpha)
+    for i in range(N):
+        result[i] = -1.0 + vector[i] - 1.0/(t*alpha[i]) + w*y[i]
+    result[-1] = alpha.dot(y)
+    return result
+
+def Hessian(A, alpha, t, y):
+    N = len(alpha)
+    (row, col) = A.shape
+    assert(N == row)
+    assert(row == col)
+    assert(t > 1.0)
+    result = A
+    vector = np.zeros(N)
+    for i in range(N):
+        vector[i] = 1.0/(t*alpha[i]**2)
+    result = result + np.diag(vector)
+    H = np.zeros((N+1, N+1))
+    H[0:-1, 0:-1] = result
+    H[-1, -1] = 0
+    H[-1, 0:-1] = y
+    H[0:-1, -1] = y
+    return H
+
+def combine(alpha, w):
+    N = len(alpha)
+    xi = np.zeros(N+1)
+    xi[0:-1] = alpha
+    xi[-1] = w
+    return xi
+
+def Newton(alpha0, w0, A, t, y, iprint = False):
+    xi0 = combine(alpha0, w0)
+    xi = xi0
+    iterationMax = 20
+    eps = 1.0e-10
+    count = 0
+    while(count <= iterationMax):
+        count = count + 1
+        H = Hessian(A, xi0[0:-1], t, y)
+        #printMatrix(H)
+        assert(invertible(H))
+        xi = xi0 - np.linalg.inv(H).dot(gradient(A, xi0[0:-1], t, xi0[-1], y))
+        error = np.linalg.norm(xi - xi0)
+        if (error < eps):
+            break
+        if (iprint):
+            print "count = ", count, ", error = ", error
+        xi0 = xi
+    return xi0
+
+def Solver(alpha0, w0, t0, A, y, iprint = False):
+    assert(t0 >= 1.0)
+    upperBound = 10000000000*t0
+    factor = 1.1
+    solution0 = combine(alpha0, w0)
+    eps = 1.0e-6
+    t = []
+    t.append(t0)
+    while(t0 < upperBound):
+        t0 = factor*t0
+        t.append(t0)
+        solution = Newton(solution0[0:-1], solution0[-1], A, t0, y, iprint)
+        error = np.linalg.norm(solution - solution0)
+        print "t = ", t0, ", error = ", error
+        if (error < eps):
+            break
+        solution0 = solution
+    return solution0
+
+def svm(negativeFileName, positiveFileName):
+    import os
+    import random
+
+    assert(os.path.exists(negativeFileName))
+    assert(os.path.exists(positiveFileName))
+    negativePoints = readPoints(negativeFileName)
+    positivePoints = readPoints(positiveFileName)
+
+    points = []
+    for i in range(len(negativePoints)):
+        points.append(negativePoints[i])
+    for i in range(len(positivePoints)):
+        points.append(positivePoints[i])
+
+    A = generateMatrix(points)
+    if (False):
+        print "A = "
+        printMatrix(A)
+    t0 = 1.0
+    y = np.zeros(len(points))
+    for i in range(len(y)):
+        y[i] = points[i].label
+    alpha0 = np.ones(len(points))
+    for i in range(len(alpha0)):
+        alpha0[i] = 0.1 #random.uniform(0.99, 1.5)
+    w0 = 1.0 #random.uniform(-1, 1)
+    solution = Solver(alpha0, w0, t0, A, y, True)
+    alpha = solution[0:-1]
+    w = solution[-1]
+    print "alpha = ", alpha
+    print "w = ", w
+    beta = np.zeros(2)
+    for i in range(len(points)):
+        vector = np.zeros(2)
+        vector[0] = points[i].x
+        vector[1] = points[i].y
+        beta = beta + solution[i]*y[i]*vector
+    print "beta = ", beta
+    print "alpha*y = ", alpha.dot(y)
+    ofile = open("result.txt", "w")
+    for i in range(len(alpha)):
+        ofile.write(str(alpha[i]) + "  " + points[i].__str__() + "\n")
+    ofile.close()
+
+def main():
+    import sys
+
+    negativeFileName = "negativePoints.txt"
+    positiveFileName = "positivePoints.txt"
+    svm(negativeFileName, positiveFileName)
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
