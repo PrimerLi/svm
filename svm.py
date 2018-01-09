@@ -105,10 +105,10 @@ def Newton(alpha0, w0, A, t, y, iprint = False):
 
 def Solver(alpha0, w0, t0, A, y, iprint = False):
     assert(t0 >= 1.0)
-    upperBound = 10000000000*t0
-    factor = 1.1
+    upperBound = 2.0e5*t0
+    factor = 1.08
     solution0 = combine(alpha0, w0)
-    eps = 1.0e-6
+    eps = 9.0e-6
     t = []
     t.append(t0)
     while(t0 < upperBound):
@@ -121,6 +121,32 @@ def Solver(alpha0, w0, t0, A, y, iprint = False):
             break
         solution0 = solution
     return solution0
+
+def quicksort(t):
+    if (len(t) == 0 or len(t) == 1):
+        return t
+    pivot = t[0][0]
+    lower = []
+    equal = []
+    upper = []
+    for i in range(len(t)):
+        if (t[i][0] < pivot):
+            lower.append(t[i])
+        elif(t[i][0] == pivot):
+            equal.append(t[i])
+        else:
+            upper.append(t[i])
+    lower = quicksort(lower)
+    equal = quicksort(equal)
+    upper = quicksort(upper)
+    result = []
+    for i in range(len(lower)):
+        result.append(lower[i])
+    for i in range(len(equal)):
+        result.append(equal[i])
+    for i in range(len(upper)):
+        result.append(upper[i])
+    return result
 
 def svm(negativeFileName, positiveFileName):
     import os
@@ -136,6 +162,12 @@ def svm(negativeFileName, positiveFileName):
         points.append(negativePoints[i])
     for i in range(len(positivePoints)):
         points.append(positivePoints[i])
+
+    point_x = []
+    for i in range(len(points)):
+        point_x.append(points[i].x)
+    xLower = min(point_x)
+    xUpper = max(point_x)
 
     A = generateMatrix(points)
     if (False):
@@ -162,10 +194,39 @@ def svm(negativeFileName, positiveFileName):
         beta = beta + solution[i]*y[i]*vector
     print "beta = ", beta
     print "alpha*y = ", alpha.dot(y)
-    ofile = open("result.txt", "w")
+    t = []
     for i in range(len(alpha)):
-        ofile.write(str(alpha[i]) + "  " + points[i].__str__() + "\n")
+        t.append((alpha[i], points[i]))
+    t = quicksort(t)
+    t.reverse()
+    ofile = open("result.txt", "w")
+    for i in range(len(t)):
+        ofile.write(str(t[i][0]) + "  " + t[i][1].__str__() + "\n")
     ofile.close()
+    firstPoint = t[0][1]
+    secondPoint = t[1][1]
+    firstBetaZero = firstPoint.label - np.asarray([firstPoint.x, firstPoint.y]).dot(beta)
+    secondBetaZero = secondPoint.label - np.asarray([secondPoint.x, secondPoint.y]).dot(beta)
+    print firstBetaZero, secondBetaZero
+    betaZero = 0.5*(firstBetaZero + secondBetaZero)
+    print abs(firstBetaZero - secondBetaZero)/firstBetaZero
+    def curve(x, beta, betaZero, mu):
+        return -x*beta[0]/beta[1] + (mu - betaZero)/beta[1]
+    def generateBoundary(xLower, xUpper, beta, betaZero, mu, outputFileName):
+        x = []
+        y = []
+        cutNumber = 20
+        delta = (xUpper - xLower)/(float(cutNumber))
+        for i in range(cutNumber+1):
+            x.append(xLower + i*delta)
+            y.append(curve(x[i], beta, betaZero, mu))
+        ofile = open(outputFileName, "w")
+        for i in range(len(x)):
+            ofile.write(str(x[i]) + "  " + str(y[i]) + "\n")
+        ofile.close()
+    generateBoundary(xLower, xUpper, beta, betaZero, -1, "lowerBoundary.txt")
+    generateBoundary(xLower, xUpper, beta, betaZero, 0, "boundary.txt")
+    generateBoundary(xLower, xUpper, beta, betaZero, 1, "upperBoundary.txt")
 
 def main():
     import sys

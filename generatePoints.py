@@ -24,12 +24,12 @@ def main():
 
     for i in range(numberOfNegatives):
         randomX = random.uniform(-1, 1)
-        randomY = random.uniform(-1, 2)
+        randomY = random.uniform(-1, 1)
         point = Point.Point(randomX, randomY, -1)
         negativePoints.append(point)
     for i in range(numberOfPositives):
-        randomX = 3 + random.uniform(-1.4, 2)
-        randomY = 2 + random.uniform(-1, 1)
+        randomX = 3 + random.uniform(-1.9, 2)
+        randomY = 3 + random.uniform(-1.9, 1)
         point = Point.Point(randomX, randomY, 1)
         positivePoints.append(point)
 
