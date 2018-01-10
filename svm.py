@@ -179,9 +179,9 @@ def svm(negativeFileName, positiveFileName):
         y[i] = points[i].label
     alpha0 = np.ones(len(points))
     for i in range(len(alpha0)):
-        alpha0[i] = 0.1 #random.uniform(0.99, 1.5)
+        alpha0[i] = 0.05 #random.uniform(0.99, 1.5)
     w0 = 1.0 #random.uniform(-1, 1)
-    solution = Solver(alpha0, w0, t0, A, y, True)
+    solution = Solver(alpha0, w0, t0, A, y, False)
     alpha = solution[0:-1]
     w = solution[-1]
     print "alpha = ", alpha
@@ -207,9 +207,10 @@ def svm(negativeFileName, positiveFileName):
     secondPoint = t[1][1]
     firstBetaZero = firstPoint.label - np.asarray([firstPoint.x, firstPoint.y]).dot(beta)
     secondBetaZero = secondPoint.label - np.asarray([secondPoint.x, secondPoint.y]).dot(beta)
-    print firstBetaZero, secondBetaZero
+    print "beta0 = ", firstBetaZero
+    print "beta0 = ", secondBetaZero
     betaZero = 0.5*(firstBetaZero + secondBetaZero)
-    print abs(firstBetaZero - secondBetaZero)/firstBetaZero
+    print "Percent error of beta0: ", abs(firstBetaZero - secondBetaZero)/firstBetaZero
     def curve(x, beta, betaZero, mu):
         return -x*beta[0]/beta[1] + (mu - betaZero)/beta[1]
     def generateBoundary(xLower, xUpper, beta, betaZero, mu, outputFileName):
@@ -227,6 +228,7 @@ def svm(negativeFileName, positiveFileName):
     generateBoundary(xLower, xUpper, beta, betaZero, -1, "lowerBoundary.txt")
     generateBoundary(xLower, xUpper, beta, betaZero, 0, "boundary.txt")
     generateBoundary(xLower, xUpper, beta, betaZero, 1, "upperBoundary.txt")
+    os.system("python pltfiles.py " + negativeFileName + "  " + positiveFileName + " lowerBoundary.txt boundary.txt upperBoundary.txt")
 
 def main():
     import sys
