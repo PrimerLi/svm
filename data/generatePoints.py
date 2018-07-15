@@ -14,7 +14,7 @@ def main():
     import sys
 
     if (len(sys.argv) != 3):
-        print "n = sys.argv[1], p = sys.argv[2]. "
+        print "Number of negative points = sys.argv[1], number of positive points = sys.argv[2]. "
         return -1
 
     negativePoints = []

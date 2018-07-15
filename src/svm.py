@@ -99,7 +99,7 @@ def Newton(alpha0, w0, A, t, y, iprint = False):
         count = count + 1
         H = Hessian(A, xi0[0:-1], t, y)
         #printMatrix(H)
-        assert(invertible(H))
+        #assert(invertible(H))
         xi = xi0 - np.linalg.inv(H).dot(gradient(A, xi0[0:-1], t, xi0[-1], y))
         error = np.linalg.norm(xi - xi0)
         if (error < eps):
@@ -239,8 +239,8 @@ def svm(negativeFileName, positiveFileName):
 def main():
     import sys
 
-    negativeFileName = "negativePoints.txt"
-    positiveFileName = "positivePoints.txt"
+    negativeFileName = "../data/negativePoints.txt"
+    positiveFileName = "../data/positivePoints.txt"
     svm(negativeFileName, positiveFileName)
 
 if __name__ == "__main__":
