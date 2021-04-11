@@ -200,6 +200,8 @@ def svm(negativeFileName, positiveFileName):
         beta = beta + solution[i]*y[i]*vector
     print "beta = ", beta
     print "alpha*y = ", alpha.dot(y)
+    print "sum of alpha = " + str(sum(alpha))
+    print "beta*beta = " + str(beta.dot(beta))
     t = []
     for i in range(len(alpha)):
         t.append((alpha[i], points[i]))
